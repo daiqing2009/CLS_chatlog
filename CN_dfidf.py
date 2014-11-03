@@ -6,7 +6,6 @@ Created on Tue Oct 28 17:40:42 2014
 """
 
 import datetime
-import time
 import sqlite3
 import os
 import codecs
@@ -20,13 +19,16 @@ from sklearn.naive_bayes import MultinomialNB
 
 def persist_chatlog(filename, conn):
     with conn:
-        cur = conn.cursor()    
+        cur = conn.cursor() 
         
         f = codecs.open(filename,'r+','gbk')
+        messages = []
         for line in f.readlines():
-            if line.startwith():
+            if line.startwith():                
                 msg=generateMsg(line)
-                cur.execute('insert into message() values (?,?)',(msg,))
+                messages.append
+        ()
+        cur.execute('insert into message() values (?,?)',(msg,))
 
 def generateMsg(line):
     s = line.split()
@@ -64,28 +66,22 @@ class Message(object):
     def __repr__(self):
         return "on %s, %s said: %s" % (self.msgTime.strftime("%Y-%m-%d %X"), self.who, self.said)
     
-def adapt_message(msg):
-    return "%d;%s;%s" % (time.mktime(msg.msgTime.timetuple()), msg.who, msg.said)
-    
-def convert_messgae(s):    
-    msgTime, who, said= (s.split(";")[0],map(str,s.split(";")[1:2]))
-    return Message(msgTime, who, said)
-    
 #获取文件列表（该目录下放着100份文档）
 def getFilelist(path):
     filelist = []
     files = os.listdir(path)
     for f in files:
-        if(f[0] == '.') :
+        if(f[0] == '.'):
             pass
     else:
         filelist.append(f)
         return filelist,path
 
 if __name__ == "__main__":
-    sqlite3.register_adapter(Message, adapt_message)
-    sqlite3.register_converter("message", convert_messgae)
     conn = sqlite3.connect("CN_CLS")
+    
+    with conn:
+        cur.execute("create table message(id integer primray key, msg_time datetime, who TEXT, said TEXT)")
     
     #從目錄下读取文档
     for filename in getFilelist("./chatlog"):
