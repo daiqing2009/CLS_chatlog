@@ -28,7 +28,6 @@ def persist_chatlog(filename, conn):
                 msg=generateMsg(line)
                 cur.execute('insert into message() values (?,?)',(msg,))
 
-    
 def generateMsg(line):
     s = line.split()
     msgTime = datetime.datetime.strptime(s[0],"%Y年%m月%d日%X")        
@@ -63,7 +62,7 @@ class Message(object):
         self.msgTime, self.who, self.said = msgTime, who, said
         
     def __repr__(self):
-        return "on %s, %s said: %s" % self.msgTime, self.who, self.said
+        return "on %s, %s said: %s" % (self.msgTime.strftime("%Y-%m-%d %X"), self.who, self.said)
     
 def adapt_message(msg):
     return "%d;%s;%s" % (time.mktime(msg.msgTime.timetuple()), msg.who, msg.said)
