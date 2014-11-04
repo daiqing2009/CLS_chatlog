@@ -19,16 +19,17 @@ from sklearn.naive_bayes import MultinomialNB
 
 def persist_chatlog(filename, conn):
     with conn:
-        cur = conn.cursor() 
+        cur = conn.cursor()
         
         f = codecs.open(filename,'r+','gbk')
         messages = []
         for line in f.readlines():
             if line.startwith():                
                 msg=generateMsg(line)
-                messages.append
-        ()
-        cur.execute('insert into message() values (?,?)',(msg,))
+                print msg
+                messages.append(msg.msgTime,msg.who,msg.said,False)
+        cur.executemany('insert into messages(msg_time,who,said,is_confirmed) values (?,?,?,?)',messages)
+        
 
 def generateMsg(line):
     s = line.split()
@@ -81,11 +82,11 @@ if __name__ == "__main__":
     conn = sqlite3.connect("CN_CLS")
     
     with conn:
-        cur.execute("create table message(id integer primray key, msg_time datetime, who TEXT, said TEXT)")
-    
+        cur.execute("create table messages(id INTEGER PRIMARY KEY AUTOINCREMENT, msg_time datetime, who TEXT, said TEXT, category TEXT, is_confirmed BOOLEAN)")
+
     #從目錄下读取文档
     for filename in getFilelist("./chatlog"):
-        persist_chatlog( filename,conn )
+        persist_chatlog(filename,conn )
     
     #模拟写入category    
     
