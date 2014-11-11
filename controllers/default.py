@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # this file is released under public domain and you can use without limitations
 
-import textmodel
+import classify
 #########################################################################
 ## This is a sample controller
 ## - index is the default action of any application
@@ -26,7 +26,7 @@ def index():
                                      lambda row: row.chatlog.is_confirmed >= db.ACC_PER_CONFIRM and '==>' or '=>')
     db.chatlog.category.widget = SQLFORM.widgets.autocomplete(
      request, db.category.name, limitby=(0,7), min_length=1)
-    db.chatlog.category.requires = IS_CATEGORY_SET_OR_PREDICTED(inDB=(db,'category.name'),said=request.vars.said)
+    db.chatlog.category.requires = IS_SET_OR_PREDICTED(refDB=(db,'category.name'),predictedBy=request.vars.said)
     grid = SQLFORM.grid(db.chatlog,user_signature=False,deletable=False,
                         orderby='is_confirmed',
                         selectable=[('confirm',lambda ids : redirect(URL('default', 'confirm_predict', vars=dict(id=ids)))),],
@@ -43,20 +43,24 @@ def confirm_predict():
             row.update_record()
     redirect(URL('index'))
 
-class IS_CATEGORY_SET_OR_PREDICTED(IS_IN_DB):
-    def __init__(self, **params, error_message='invalid category, BUT system predicted4you:)'):
-        self.params = params
+class IS_SET_OR_PREDICTED(IS_IN_DB):
+    def __init__(self, refDB=(db,'category.name'),predictedBy="who?", error_message='--predicted as:'):
+                
+        self.predictedBy = predictedBy
         #initialize 
-        super.__init__(params[])
+        super.__init__(refDB)
         self.error_message = error_message
         
     def __call__(self, value):
         try:
-           super.__call__(value)
-           value = textmodel.get_cls_model('simple').predict(form.vars.said)
-           return (value, None)
+           _value,error_message =super.__call__(value)
+           if error_message:
+               value = classify.get_cls_model('simple').predict(self.predictedBy)
+               return (value, error_message + self.error_message + value)
+           else:
+               return (_value, None)
         except:
-           return (value, self.error_message)
+           return (value, 'unknown error happened...')
         
     def formatter(self, value):
         return value

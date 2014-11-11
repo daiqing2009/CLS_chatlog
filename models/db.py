@@ -30,10 +30,11 @@ db.define_table(
     Field('msg_time', 'datetime',requires = IS_NOT_EMPTY()),
     Field('who','string'),
     Field('said','text',requires = IS_NOT_EMPTY()),
-    Field('category',requires = IS_NOT_EMPTY()),
+    Field('category'),
     Field('is_confirmed','integer')
 )
 ACC_PER_CONFIRM = 100
+ACC_PER_PREDICT = 1
 #Task:允许后台维护
 db.define_table('category',Field('name'))
 db.category.insert(name="售前->库存")
