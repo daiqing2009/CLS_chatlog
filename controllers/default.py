@@ -22,8 +22,7 @@ def index():
     db.chatlog.is_confirmed.writable =False
     #db.chatlog.who.writable=False
     #db.chatlog.said.writable=False
-    db.chatlog.guess = Field.Virtual('guess',
-                                     lambda row: row.chatlog.is_confirmed >= db.ACC_PER_CONFIRM and '==>' or '=>')
+    db.chatlog.guess = Field.Virtual('guess',lambda row: row.chatlog.is_confirmed >= db.ACC_PER_CONFIRM and '==>' or '=>')
     db.chatlog.category.widget = SQLFORM.widgets.autocomplete(
      request, db.category.name, limitby=(0,7), min_length=1)
     db.chatlog.category.requires = IS_SET_OR_PREDICTED(refDB=(db,'category.name'),predictedBy=request.vars.said)
@@ -45,15 +44,14 @@ def confirm_predict():
 
 class IS_SET_OR_PREDICTED(IS_IN_DB):
     def __init__(self, refDB=(db,'category.name'),predictedBy="who?", error_message='--predicted as:'):
-                
+        #initialize
+        super(IS_SET_OR_PREDICTED,self).__init__(*refDB)
         self.predictedBy = predictedBy
-        #initialize 
-        super.__init__(refDB)
         self.error_message = error_message
         
     def __call__(self, value):
         try:
-           _value,error_message =super.__call__(value)
+           _value,error_message =super(IS_SET_OR_PREDICTED,self).__call__(value)
            if error_message:
                value = classify.get_cls_model('simple').predict(self.predictedBy)
                return (value, error_message + self.error_message + value)
