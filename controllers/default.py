@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 # this file is released under public domain and you can use without limitations
 
-
-#########################################################################
+########################################################################
 ## This is a sample controller
 ## - index is the default action of any application
 ## - user is required for authentication and authorization
@@ -16,19 +15,21 @@ def index():
     rendered by views/default/index.html or views/generic.html
     """
     #response.flash = T("This is only a demo...")
-    #return dict(message=T('Input the words in TextArea Below or upload the file!'))
     message=T('please upload chatlog file:')
-   
     db.chatlog.is_confirmed.readable =False
     db.chatlog.is_confirmed.writable =False
     #db.chatlog.who.writable=False
     #db.chatlog.said.writable=False
     db.chatlog.category.widget = SQLFORM.widgets.autocomplete(
-     request, db.category.name, limitby=(2,3), min_length=1)
-    db.chatlog.category.requires = IS_SET_OR_PREDICTED(refDB=(db,'category.name'),predictedBy=request.vars.said)
-    grid = SQLFORM.grid(db.chatlog,user_signature=False,deletable=False,
+     request, db.category.name, limitby=(2,5), min_length=2)
+
+    refDB_param = dict(params=(db,'category.name'),error_message=T('invalid category'))
+    db.chatlog.category.requires = IS_SET_OR_PREDICTED(refDB=refDB_param,
+                                                       predictedBy=request.vars.said)
+    grid = SQLFORM.grid(db.chatlog,deletable=False,
+                        user_signature=False,
                         orderby='is_confirmed',
-                        selectable=[('confirm',lambda ids : redirect(URL('default', 'confirm_predict', vars=dict(id=ids)))),],
+                        selectable=[(T('confirm'),lambda ids : redirect(URL('default', 'confirm_predict', vars=dict(id=ids)))),],
                         )
     return locals()
 
@@ -41,23 +42,23 @@ def confirm_predict():
             row.is_confirmed = ACC_PER_CONFIRM
             row.update_record()
     redirect(URL('index'))
-    
+
 #import classify
 class IS_SET_OR_PREDICTED(IS_IN_DB):
-    def __init__(self, refDB=(db,'category.name'),predictedBy="who?", error_message='--predicted as:'):
+    def __init__(self, refDB,predictedBy, errMsg=T(',predicted as:')):
         #initialize
-        super(IS_SET_OR_PREDICTED,self).__init__(*refDB)
+        super(IS_SET_OR_PREDICTED,self).__init__(*refDB['params'],error_message = refDB['error_message'])
         self.predictedBy = predictedBy
-        self.error_message = error_message
+#        super(IS_SET_OR_PREDICTED,self).error_message = error_message
+        self.errMsg = errMsg
         
     def __call__(self, value):
         try:
-           _value,err_msg =super(IS_SET_OR_PREDICTED,self).__call__(value)
-           if err_msg:
-              #Task: integrate with classifier
-               value = u"物流、发货"
-#               value = classify.get_cls_model('simple').predict(self.predictedBy)
-               return (value, err_msg + self.error_message + value)
+           _value,error_message =super(IS_SET_OR_PREDICTED,self).__call__(value)
+           if error_message:
+               value = "其他"
+#               value = classify.get_cls_model('cn_').predict(self.predictedBy)
+               return (value, error_message + self.errMsg + value)
            else:
                return (_value, None)
         except:
