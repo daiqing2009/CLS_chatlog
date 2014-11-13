@@ -30,28 +30,23 @@ db.define_table(
     Field('msg_time', 'datetime',requires = IS_NOT_EMPTY()),
     Field('who','string'),
     Field('said','text',requires = IS_NOT_EMPTY()),
-    Field('category'),
+    Field.Virtual('guess',
+                  lambda row: row.chatlog.is_confirmed >= ACC_PER_CONFIRM and '==>' or '=>'),
+    Field('category','string'),
     Field('is_confirmed','integer')
 )
+
 ACC_PER_CONFIRM = 100
 ACC_PER_PREDICT = 1
 #Task:允许后台维护
-db.define_table('category',Field('name'))
-db.category.insert(name="售前->库存")
-db.category.insert(name="售前->商品咨询")
-db.category.insert(name="售前->购物操作")
-db.category.insert(name="售前->促销活动")
-db.category.insert(name="售前->退换货政策")
-db.category.insert(name="售前->配送")
-db.category.insert(name="售前->电子快报")
-db.category.insert(name="售前->发票事宜")
-db.category.insert(name="售前->订单信息查询")
-db.category.insert(name="售前->无效信息")
-db.category.insert(name="售前->其他")
-db.category.insert(name="售后->商品")
-db.category.insert(name="售后->退换货")
-db.category.insert(name="售后->修改订单信息")
-db.category.insert(name="售后->取消订单")
+db.define_table('category',
+                Field('name','string'))
+db.category.insert(name="物流、发货")
+db.category.insert(name="退换货、退款")
+db.category.insert(name="价格、促销")
+db.category.insert(name="商品咨询")
+db.category.insert(name="库存")
+db.category.insert(name="其他")
 
 
 ## (optional) optimize handling of static files
