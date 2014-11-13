@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 import jieba.posseg as pseg
-import numpy as np
 
 from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.naive_bayes import MultinomialNB
-
+from sklearn.linear_model import SGDClassifier
 def get_cls_model(name):
     #getModel pipleline
     modelPipeline = _get_cls_models()[name]
@@ -16,12 +15,16 @@ def get_cls_model(name):
 
 def _get_cls_models():
     clsModels = dict()
-    cn_NB_clf = Pipeline([('vect', CountVectorizer(tokenizer=lambda doc:tokenize_CN(doc))),
-                         ('tfidf', TfidfTransformer()),
-                         ('clf', MultinomialNB()),
-    ])
+    cnPreprocessor = Pipeline([('vect', CountVectorizer(tokenizer=lambda doc:tokenize_CN(doc))),
+                         ('tfidf', TfidfTransformer()),])
+    cn_NB_clf = Pipeline([('preprocess',cnPreprocessor),
+                         ('clf', MultinomialNB())])
+    cn_SGD_clf = Pipeline([('preprocess',cnPreprocessor),
+                         ('clf', SGDClassifier(loss='hinge', penalty='l2',
+                                               alpha=1e-3, n_iter=5))])                    
     clsModels['cn_NB'] = cn_NB_clf
-    return clsModel
+    clsModels['cn_SGD'] = cn_SGD_clf
+    return clsModels
 
 #Task: build customized 词库
 def tokenize_CN(doc):
@@ -46,7 +49,8 @@ def init_training(name):
 	
      #persist model accordingly
     _persist_cls_model('cn',model)
-	
+
+from csv_handler import UnicodeReader	
 def _load_init_data(fileName):
     corpus = []
     targetIndex = []
@@ -96,28 +100,32 @@ def _retrieve_cls_model(name):
     return model    
 
 
-from sklearn import cross_validation
-    
+from sklearn import cross_validation    
 if __name__ == '__main__':
     #read initial csv to initial classifier
     corpus,targets = _load_init_data('CallNature_CLS.csv')
     
+    model = get_cls_model('cn_SGD')
     
-    #Task: corpus needs to be transformed
-    
-    data_train, data_test, tgt_train, tgt_test = cross_validation.train_test_split(
-    ...     data, targets[index], test_size=0.4, random_state=0)    
-    
-    model = get_cls_model('cn_NB')    
-    
-    model.fit(corpus,targets['index'])
-    #test the effectiveness of model    
-    
-    scores = cross_validation.cross_val_score(model, iris.data, iris.target, cv=5)
-    
-    #retrieve the issue and cross-validate the result
-    #test the effectivenmess of model again
-#    model = _retrieve_cls_model('cn_NB')
+    #corpus needs to be transformed
+    preprocessor = model.named_steps['preprocess']
+
+    data = preprocessor.fit_transform(corpus)
+    print "(row num , features num )=>"+data.shape.__str__()
+	
+	#cross-validate the sample
+    data_train, data_test, tgt_train, tgt_test = cross_validation.train_test_split(data, targets['index'], 
+                                      test_size=0.2, random_state=0) 
+   
+    clf = model.named_steps['clf']
+    clf.fit(data_train, tgt_train)
+    #test the effectiveness of model on test data   
+    print clf.score(data_test, tgt_test)
+    #test the effectiveness of model on over all 
+    scores = cross_validation.cross_val_score(clf, data, targets['index'], cv=5)
+    print scores
+    print("Accuracy: %0.3f (+/- %0.3f)" % (scores.mean(), scores.std() * 2))
+
     
     
     
