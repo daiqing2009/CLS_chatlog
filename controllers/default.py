@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # this file is released under public domain and you can use without limitations
 
-import classify
+
 #########################################################################
 ## This is a sample controller
 ## - index is the default action of any application
@@ -18,13 +18,13 @@ def index():
     #response.flash = T("This is only a demo...")
     #return dict(message=T('Input the words in TextArea Below or upload the file!'))
     message=T('please upload chatlog file:')
+   
     db.chatlog.is_confirmed.readable =False
     db.chatlog.is_confirmed.writable =False
     #db.chatlog.who.writable=False
     #db.chatlog.said.writable=False
-    db.chatlog.guess = Field.Virtual('guess',lambda row: row.chatlog.is_confirmed >= db.ACC_PER_CONFIRM and '==>' or '=>')
     db.chatlog.category.widget = SQLFORM.widgets.autocomplete(
-     request, db.category.name, limitby=(0,7), min_length=1)
+     request, db.category.name, limitby=(2,3), min_length=1)
     db.chatlog.category.requires = IS_SET_OR_PREDICTED(refDB=(db,'category.name'),predictedBy=request.vars.said)
     grid = SQLFORM.grid(db.chatlog,user_signature=False,deletable=False,
                         orderby='is_confirmed',
@@ -38,10 +38,11 @@ def confirm_predict():
         row = db(db.chatlog.id == rowId).select().first()
         #Task:should check if the row's category is changed
         if True:
-            row.is_confirmed = db.ACC_PER_CONFIRM
+            row.is_confirmed = ACC_PER_CONFIRM
             row.update_record()
     redirect(URL('index'))
-
+    
+#import classify
 class IS_SET_OR_PREDICTED(IS_IN_DB):
     def __init__(self, refDB=(db,'category.name'),predictedBy="who?", error_message='--predicted as:'):
         #initialize
@@ -51,10 +52,12 @@ class IS_SET_OR_PREDICTED(IS_IN_DB):
         
     def __call__(self, value):
         try:
-           _value,error_message =super(IS_SET_OR_PREDICTED,self).__call__(value)
-           if error_message:
-               value = classify.get_cls_model('simple').predict(self.predictedBy)
-               return (value, error_message + self.error_message + value)
+           _value,err_msg =super(IS_SET_OR_PREDICTED,self).__call__(value)
+           if err_msg:
+              #Task: integrate with classifier
+               value = u"物流、发货"
+#               value = classify.get_cls_model('simple').predict(self.predictedBy)
+               return (value, err_msg + self.error_message + value)
            else:
                return (_value, None)
         except:

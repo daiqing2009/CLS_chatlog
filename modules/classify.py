@@ -16,12 +16,13 @@ def get_cls_model(name):
 
 def _get_cls_models():
     clsModels = dict()
-    cn_NB_clf = Pipeline([('vect', CountVectorizer(tokenizer=lambda doc:tokenize_CN(doc))),
-                         ('tfidf', TfidfTransformer()),
+    preProcessor_CN = Pipeline([('vect', CountVectorizer(tokenizer=lambda doc:tokenize_CN(doc))),
+                         ('tfidf', TfidfTransformer()),])
+    cn_NB_clf = Pipeline([('preProcess',preProcessor_CN),
                          ('clf', MultinomialNB()),
     ])
     clsModels['cn_NB'] = cn_NB_clf
-    return clsModel
+    return clsModels
 
 #Task: build customized 词库
 def tokenize_CN(doc):
@@ -34,7 +35,7 @@ def tokenize_CN(doc):
     #Task: log these feature words
     return featureWords
 
-#import UnicodeReader
+from cvs_handler import UnicodeReader
 from sets import Set
 def init_training(name):
     #read initial classified data 
@@ -95,25 +96,23 @@ def _retrieve_cls_model(name):
     model = joblib.load(filename)
     return model    
 
-
 from sklearn import cross_validation
     
 if __name__ == '__main__':
     #read initial csv to initial classifier
     corpus,targets = _load_init_data('CallNature_CLS.csv')
     
-    
+    model = get_cls_model('cn_NB')  
     #Task: corpus needs to be transformed
+    data = model.fit_transform(corpus)
     
-    data_train, data_test, tgt_train, tgt_test = cross_validation.train_test_split(
-    ...     data, targets[index], test_size=0.4, random_state=0)    
+    data_train, data_test, tgt_train, tgt_test = cross_validation.train_test_split(data, 
+                                                                                   targets['index'], test_size=0.3, random_state=0)    
     
-    model = get_cls_model('cn_NB')    
-    
-    model.fit(corpus,targets['index'])
+    model.fit(data_train,tgt_train)
     #test the effectiveness of model    
     
-    scores = cross_validation.cross_val_score(model, iris.data, iris.target, cv=5)
+    scores = cross_validation.cross_val_score(model, data, targets['index'], cv=5)
     
     #retrieve the issue and cross-validate the result
     #test the effectivenmess of model again
