@@ -25,29 +25,29 @@ else:
 ## none otherwise. a pattern can be 'controller/function.extension'
 response.generic_patterns = ['*'] if request.is_local else []
 
+db.define_table('category',
+                Field('name','string', unique=True))
+#Task:允许后台维护
+if db(db.category.id > 0).count() == 0:
+    db.category.insert(name="物流、发货")
+    db.category.insert(name="退换货、退款")
+    db.category.insert(name="价格、促销")
+    db.category.insert(name="商品咨询")
+    db.category.insert(name="库存")
+    db.category.insert(name="其他")
+    
 db.define_table(
     'chatlog',
     Field('msg_time', 'datetime',requires = IS_NOT_EMPTY()),
     Field('who','string'),
     Field('said','text',requires = IS_NOT_EMPTY()),
-    Field.Virtual('guess',
-                  lambda row: row.chatlog.is_confirmed >= ACC_PER_CONFIRM and '==>' or '=>'),
-    Field('category','string'),
-    Field('is_confirmed','integer')
+ #    Field('category','string'),
+    Field('category_id', db.category),
+    Field('is_confirmed','integer')    
 )
 
 ACC_PER_CONFIRM = 100
 ACC_PER_PREDICT = 1
-#Task:允许后台维护
-db.define_table('category',
-                Field('name','string'))
-db.category.insert(name="物流、发货")
-db.category.insert(name="退换货、退款")
-db.category.insert(name="价格、促销")
-db.category.insert(name="商品咨询")
-db.category.insert(name="库存")
-db.category.insert(name="其他")
-
 
 ## (optional) optimize handling of static files
 # response.optimize_css = 'concat,minify,inline'

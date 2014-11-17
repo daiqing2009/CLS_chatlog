@@ -16,19 +16,19 @@ def index():
     """
     #response.flash = T("This is only a demo...")
     message=T('please upload chatlog file:')
-    db.chatlog.is_confirmed.readable =False
+    db.chatlog.category_id.readable =False
+    db.category.id.readable =False
+    db.chatlog.is_confirmed.represent=lambda is_confirmed,row: is_confirmed >= ACC_PER_CONFIRM and '===>' or '=>'
     db.chatlog.is_confirmed.writable =False
-    #db.chatlog.who.writable=False
-    #db.chatlog.said.writable=False
-    db.chatlog.category.widget = SQLFORM.widgets.autocomplete(
-     request, db.category.name, limitby=(2,5), min_length=2)
 
-    refDB_param = dict(params=(db,'category.name'),error_message=T('invalid category'))
-    db.chatlog.category.requires = IS_SET_OR_PREDICTED(refDB=refDB_param,
-                                                       predictedBy=request.vars.said)
-    grid = SQLFORM.grid(db.chatlog,deletable=False,
+    db.chatlog.category_id.requires = IS_SET_OR_PREDICTED(db, 'category.id','%(name)s',zero=T('choose one'), 
+                                                       error_message=T('invalid category'),predictedBy=request.vars.said)
+    grid = SQLFORM.grid(db.chatlog,
+                        fields=[db.chatlog.id,db.chatlog.msg_time,db.chatlog.who,db.chatlog.said,db.chatlog.is_confirmed,db.category.name],
+                        deletable=False,
                         user_signature=False,
                         orderby='is_confirmed',
+                        left=db.chatlog.on(db.chatlog.category_id == db.category.id),
                         selectable=[(T('confirm'),lambda ids : redirect(URL('default', 'confirm_predict', vars=dict(id=ids)))),],
                         )
     return locals()
@@ -45,27 +45,26 @@ def confirm_predict():
 
 #import classify
 class IS_SET_OR_PREDICTED(IS_IN_DB):
-    def __init__(self, refDB,predictedBy, errMsg=T(',predicted as:')):
+    def __init__(self, *params,**kv ):
         #initialize
-        super(IS_SET_OR_PREDICTED,self).__init__(*refDB['params'],error_message = refDB['error_message'])
-        self.predictedBy = predictedBy
-#        super(IS_SET_OR_PREDICTED,self).error_message = error_message
-        self.errMsg = errMsg
-        
+        self.predictedBy = kv.pop('predictedBy')
+        super(IS_SET_OR_PREDICTED,self).__init__(*params,**kv)
+       
     def __call__(self, value):
         try:
            _value,error_message =super(IS_SET_OR_PREDICTED,self).__call__(value)
            if error_message:
-               value = "其他"
+               value = 6      #暂用“其他”代表         
 #               value = classify.get_cls_model('cn_').predict(self.predictedBy)
-               return (value, error_message + self.errMsg + value)
+               return (value, error_message + T(',predicted as:') + self.formatter(value))
            else:
+#               return (_value, self.formatter(_value))
                return (_value, None)
         except:
-           return (value, 'unknown error happened...')
-        
+           return (value, T('unknown error'))
     def formatter(self, value):
-        return value
+#        Task: map id to category name
+        return super(IS_SET_OR_PREDICTED,self).formatter(value)
 
 def user():
     """
