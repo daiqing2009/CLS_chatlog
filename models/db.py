@@ -41,10 +41,10 @@ db.define_table(
     Field('msg_time', 'datetime',requires = IS_NOT_EMPTY()),
     Field('who','string'),
     Field('said','text',requires = IS_NOT_EMPTY()),
- #    Field('category','string'),
     Field('category_id', db.category),
     Field('is_confirmed','integer')    
 )
+
 
 ACC_PER_CONFIRM = 100
 ACC_PER_PREDICT = 1
